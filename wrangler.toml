@@ -1,0 +1,9 @@
+name = "what2do"
+pages_build_output_dir = "www"
+compatibility_date = "2026-10-01"
+
+# Live rooms run in a separate worker (room-worker/); this lets /api/room reach them.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+script_name = "waiter-rooms"

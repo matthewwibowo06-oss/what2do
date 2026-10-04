@@ -1,0 +1,16 @@
+# The live-room server: one Durable Object per room code keeps the shared state
+# (players, options, bracket, votes) and pushes updates to every phone over WebSockets.
+# The game site (Cloudflare Pages) talks to it through the ROOMS binding.
+name = "waiter-rooms"
+main = "src/index.js"
+workers_dev = false
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+

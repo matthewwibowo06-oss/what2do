@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What2Do</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#EFE9FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="What2Do">
+<style>
+/* What2Do: pastel stickers. Lilac page, white and pastel "stickers" with thick black outlines
+   and hard offset shadows; each section has its own sticker color. Same layout as The Waiter Is Coming. */
+:root {
+  --bg: #EFE9FF;          /* lilac page */
+  --paper: #FFFFFF;       /* sticker */
+  --ink: #111111;         /* outlines and text */
+  --muted: #5A5370;
+  --rule: #CFC4F2;
+  --green: #4B33B8;       /* labels and small accents (violet) */
+  --red: #D6336C;         /* stamps and warnings (raspberry) */
+  --pen: #111111;         /* option names */
+  --on-sticker: #111111;  /* text on pastel fills, same in both themes */
+  --butter: #FFE89A; --peach: #FFD9C7; --mint: #C8F0DC; --sky: #CFE0FF; --pink: #FFC9DD;
+  --sticker: var(--peach);
+  --shadow: 4px 4px 0 var(--ink);
+  --display: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Baloo 2", system-ui, -apple-system, sans-serif;
+  --mono: "Baloo 2", system-ui, sans-serif;
+  --hand: "Baloo 2", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1B1630; --paper: #2A2340; --ink: #F4EFFF; --muted: #B9AEDB;
+    --rule: #4A3F6E; --green: #B8A6FF; --red: #FF8FAE; --pen: #F4EFFF; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1B1630; --paper: #2A2340; --ink: #F4EFFF; --muted: #B9AEDB;
+  --rule: #4A3F6E; --green: #B8A6FF; --red: #FF8FAE; --pen: #F4EFFF; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; gap: 18px; }
+
+header h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 7vw, 2.8rem); line-height: 1; margin: 0; color: var(--green); text-wrap: balance; }
+header p { margin: 8px 0 0; color: var(--muted); max-width: 46ch; }
+
+/* waiter track */
+.track { position: relative; height: 92px; border-bottom: 2px dashed var(--rule); }
+.track .end { position: absolute; bottom: 6px; font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.track .end.l { left: 0; } .track .end.r { right: 0; text-align: right; }
+.waiter { position: absolute; bottom: 0; left: 0; width: 56px; height: 84px; transition: left .7s cubic-bezier(.4,1.6,.5,1); color: var(--ink); }
+.waiter.walk svg { animation: bob .35s ease-in-out 2; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.bubble { position: absolute; bottom: 70px; left: 50px; white-space: nowrap; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 10px; padding: 4px 9px; font: 400 20px/1.1 var(--hand); color: var(--pen); }
+.bubble[hidden] { display: none !important; }
+
+/* guest check */
+.check { background: var(--paper); box-shadow: var(--shadow); border-radius: 3px; position: relative; overflow: hidden; }
+.check::before { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: radial-gradient(circle at 6px 0, transparent 4px, var(--paper) 4.5px) 0 0 / 12px 6px; transform: translateY(-1px); }
+.check-head { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 2px solid var(--green); }
+.check-head div { padding: 8px 10px; border-right: 1px solid var(--rule); }
+.check-head div:last-child { border-right: 0; }
+.check-head small { display: block; font: 600 9px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+.check-head b { font: 600 14px/1.4 var(--mono); display: block; padding-block: 2px; overflow-wrap: anywhere; }
+.check-head .no b { color: var(--red); }
+.check-body { padding: 18px 18px 20px; display: grid; gap: 14px; }
+.label { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+
+/* setup */
+.lines { display: grid; }
+.line { display: grid; grid-template-columns: 2.2em 1fr auto; align-items: center; border-bottom: 1px solid var(--rule); }
+.line span { font: 600 13px var(--mono); color: var(--muted); }
+.line input { border: 0; background: transparent; color: var(--pen); font: 400 26px/1.4 var(--hand); padding: 2px 4px; min-width: 0; width: 100%; }
+.line input:focus { outline: none; background: color-mix(in srgb, var(--rule) 25%, transparent); }
+.line button { border: 0; background: none; color: var(--muted); font: 500 20px var(--body); cursor: pointer; padding: 0 6px; }
+.line button:hover { color: var(--red); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill { border: 1.5px solid var(--ink); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 500 14px var(--body); cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.go { border: 0; background: var(--red); color: #fff; font: 400 22px/1 var(--display); padding: 14px 18px; border-radius: 6px; cursor: pointer; width: 100%; }
+.go:disabled { opacity: .45; cursor: not-allowed; }
+.ghost { border: 0; background: none; color: var(--green); font: 500 14px var(--body); text-decoration: underline; cursor: pointer; padding: 4px 0; justify-self: start; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 14px; margin: 0; }
+
+/* duel */
+.round { display: flex; justify-content: space-between; font: 600 12px var(--mono); color: var(--muted); }
+.timer { height: 8px; background: color-mix(in srgb, var(--rule) 45%, transparent); border-radius: 4px; overflow: hidden; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--green); transform-origin: left; }
+.timer.low i { background: var(--red); }
+.duel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.vs { align-self: center; font: 400 22px var(--display); color: var(--red); }
+.dish { border: 2px solid var(--ink); background: var(--paper); color: var(--pen); border-radius: 8px; padding: 18px 10px; min-height: 130px; font: 400 clamp(24px, 6vw, 32px)/1.05 var(--hand); cursor: pointer; text-wrap: balance; overflow-wrap: anywhere; display: grid; place-items: center; gap: 6px; transition: transform .12s; }
+.dish:hover { transform: translateY(-2px) rotate(-.6deg); }
+.dish:active { transform: scale(.97); }
+.dish kbd { font: 600 11px var(--mono); color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; }
+.strikes { display: flex; gap: 6px; align-items: center; font: 600 12px var(--mono); color: var(--muted); }
+.strikes b { width: 18px; height: 18px; border: 1.5px solid var(--muted); border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; }
+.strikes b.on { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* verdict */
+.order { font: 400 clamp(40px, 11vw, 60px)/1 var(--hand); color: var(--pen); margin: 4px 0 0; transform: rotate(-2deg); text-wrap: balance; overflow-wrap: anywhere; }
+.order.scribble { animation: write .7s ease-out; }
+@keyframes write { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.stats div { padding: 8px 6px; border-right: 1px solid var(--rule); }
+.stats div:last-child { border-right: 0; }
+.stats b { display: block; font: 600 18px var(--mono); font-variant-numeric: tabular-nums; }
+.stats small { font: 600 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+.gut { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gut button { border: 1.5px solid var(--ink); background: transparent; color: var(--ink); border-radius: 6px; padding: 12px 8px; font: 500 15px var(--body); cursor: pointer; }
+.gut button:hover { background: var(--ink); color: var(--paper); }
+.final { font-size: 15px; margin: 0; }
+.final strong { color: var(--red); }
+.stamp { justify-self: end; font: 400 18px var(--display); color: var(--red); border: 3px solid var(--red); padding: 2px 10px; border-radius: 4px; transform: rotate(-8deg); opacity: .85; }
+
+footer { color: var(--muted); font-size: 13px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+@media (max-width: 420px) { .check-head { grid-template-columns: repeat(2, 1fr); } .check-head div:nth-child(2) { border-right: 0; } .check-head div:nth-child(-n+2) { border-bottom: 1px solid var(--rule); } }
+
+/* category switcher */
+.cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cat { border: 1.5px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 8px 8px; cursor: pointer; display: grid; gap: 2px; text-align: left; min-width: 0; }
+.cat b { font: 400 17px/1.1 var(--display); color: var(--green); }
+.cat small { font: 500 12px/1.3 var(--body); color: var(--muted); }
+.cat[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.cat[aria-pressed="true"] b { color: var(--red); }
+.eyebrow { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--red); margin: 0 0 8px; }
+@media (max-width: 520px) { .cats { grid-template-columns: repeat(3, 1fr); } }
+
+/* section looks */
+header { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.headtext { min-width: 0; }
+.scene { width: 120px; }
+.scene:empty { display: none; }
+.scene svg { width: 100%; height: auto; display: block; overflow: visible; }
+@media (max-width: 480px) { .scene { width: 84px; } }
+.steam path { animation: steam 2.6s ease-in-out infinite; transform-box: fill-box; }
+.steam path:nth-child(2) { animation-delay: .5s; } .steam path:nth-child(3) { animation-delay: 1s; }
+@keyframes steam { 0%, 100% { opacity: .2; transform: translateY(4px); } 50% { opacity: 1; transform: translateY(-3px); } }
+.route { animation: route 1.4s linear infinite; }
+@keyframes route { to { stroke-dashoffset: -20; } }
+.bounce { animation: bounce 1.6s ease-in-out infinite; }
+@keyframes bounce { 50% { transform: translateY(-5px); } }
+.tilt { transform-origin: 60px 48px; animation: tilt 4s ease-in-out infinite; }
+@keyframes tilt { 50% { transform: rotate(-4deg); } }
+.sparkle path { animation: sparkle 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.sparkle path:nth-child(2) { animation-delay: 1s; }
+@keyframes sparkle { 50% { transform: scale(.4); opacity: .4; } }
+.flipcoin { transform-origin: 60px 48px; animation: flipcoin 3s ease-in-out infinite; }
+@keyframes flipcoin { 0%, 60% { transform: scaleX(1); } 70% { transform: scaleX(.05); } 80%, 100% { transform: scaleX(1); } }
+
+.ico { width: 30px; height: 30px; color: var(--green); flex: none; }
+.ico.big { width: 56px; height: 56px; color: var(--red); }
+.line span .ico { width: 22px; height: 22px; vertical-align: middle; }
+.dish .dname { display: block; }
+
+/* Food: menu cards with a double rule */
+:root[data-cat="food"] .dish { border-style: double; border-width: 5px; border-radius: 4px; }
+/* Plans: postcards with a stamp in the corner */
+:root[data-cat="plans"] .dish { position: relative; border-radius: 4px; background-image: repeating-linear-gradient(-45deg, transparent 0 6px, color-mix(in srgb, var(--rule) 22%, transparent) 6px 7px); }
+:root[data-cat="plans"] .dish::after { content: ""; position: absolute; top: 8px; right: 8px; width: 16px; height: 20px; border: 2px dashed var(--red); border-radius: 2px; }
+/* Movies: tickets with side notches and a dashed edge */
+:root[data-cat="movies"] .dish { border-style: dashed; border-radius: 6px;
+  -webkit-mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
+:root[data-cat="movies"] .dish::before { content: "ADMIT ONE"; font: 600 9px/1 var(--mono); letter-spacing: .14em; color: var(--red); }
+@media (prefers-reduced-motion: reduce) { .steam path, .route, .bounce, .tilt, .sparkle path, .flipcoin { animation: none; } }
+
+/* about */
+.about { color: var(--muted); font-size: 13px; }
+.about summary { cursor: pointer; text-align: center; }
+.about p { margin: 8px 0 0; max-width: 60ch; }
+.about a { color: inherit; }
+
+/* live rooms */
+.roombar:empty { display: none; }
+.friends { justify-self: start; border: 1.5px dashed var(--green); background: transparent; color: var(--green); border-radius: 999px; padding: 7px 14px; font: 600 14px var(--body); cursor: pointer; }
+.roomform, .roominfo { display: grid; gap: 10px; background: var(--paper); border-radius: 8px; padding: 12px; box-shadow: var(--shadow); }
+.roomform .row { align-items: center; }
+.codein { width: 5.5em; border: 1.5px solid var(--rule); background: transparent; color: var(--ink); border-radius: 6px; padding: 9px 8px; font: 600 16px var(--mono); letter-spacing: .15em; text-transform: uppercase; text-align: center; }
+.roomtop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.roomtop .ghost { margin-left: auto; }
+.code { border: 0; background: var(--ink); color: var(--paper); border-radius: 6px; padding: 4px 10px; font: 600 20px var(--mono); letter-spacing: .18em; cursor: pointer; }
+.players { display: flex; flex-wrap: wrap; gap: 6px; }
+.pchip { border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px; font: 500 13px var(--body); }
+.pchip.away { opacity: .45; }
+.pchip.voted { border-color: var(--green); color: var(--green); }
+.pchip.voted::after { content: " ✓"; }
+.dish.picked { border-color: var(--red); box-shadow: inset 0 0 0 2px var(--red); }
+.dish.lost { opacity: .45; }
+
+/* coin flip */
+.coinwrap { perspective: 700px; display: grid; place-items: center; padding-block: 36px 8px; }
+.coin { width: 160px; height: 160px; position: relative; transform-style: preserve-3d; }
+.coin .face { position: absolute; inset: 0; border-radius: 50%; display: grid; place-content: center; gap: 4px; padding: 18px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--paper); border: 5px solid var(--green); box-shadow: inset 0 0 0 5px var(--paper), inset 0 0 0 7px var(--rule); color: var(--pen); font: 400 24px/1.05 var(--hand); overflow-wrap: anywhere; }
+.coin .face small { font: 600 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--green); }
+.coin .back { transform: rotateY(180deg); border-color: var(--red); }
+.coin .back small { color: var(--red); }
+
+/* character picker */
+.who { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.who::-webkit-scrollbar { display: none; }
+.whob { flex: 0 0 auto; display: grid; justify-items: center; gap: 4px; min-width: 68px; padding: 8px 6px 6px; border: 1.5px solid var(--rule); border-radius: 10px; background: transparent; color: var(--ink); font: 500 12px var(--body); cursor: pointer; }
+.whob[aria-pressed="true"] { border-color: var(--red); color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+.whob svg { color: inherit; }
+
+/* fill panel: shuffle or ask AI */
+.fill { border: 1.5px dashed var(--rule); border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.seg { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; justify-self: start; }
+.seg button { border: 0; background: transparent; color: var(--ink); font: 600 13px var(--body); padding: 6px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:disabled { color: var(--muted); cursor: not-allowed; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--rule); background: transparent; color: var(--ink); border-radius: 999px; padding: 4px 10px; font: 500 13px var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.field { display: grid; gap: 4px; }
+.field label { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.field input { border: 1.5px solid var(--rule); background: transparent; color: var(--ink); border-radius: 6px; padding: 9px 10px; font: 400 16px var(--body); width: 100%; }
+.field input:focus { outline: none; border-color: var(--pen); }
+.act { border: 1.5px solid var(--green); background: var(--green); color: var(--paper); border-radius: 6px; padding: 9px 14px; font: 600 14px var(--body); cursor: pointer; }
+.act.alt { background: transparent; color: var(--green); }
+.act:disabled { opacity: .5; cursor: not-allowed; }
+.status { font-size: 14px; color: var(--muted); margin: 0; }
+.status.err { color: var(--red); }
+.thinking::after { content: "…"; animation: dots 1.2s steps(4) infinite; display: inline-block; width: 1.2em; overflow: hidden; vertical-align: bottom; }
+@keyframes dots { from { width: 0; } to { width: 1.2em; } }
+.line .note { grid-column: 2 / 3; font: 500 12px var(--body); color: var(--muted); padding: 0 4px 6px; margin-top: -4px; }
+.dish .note { font: 500 12px/1.3 var(--body); color: var(--muted); }
+.topic input { font: 400 24px/1.3 var(--hand); color: var(--pen); }
+
+/* phone app polish */
+html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+.wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+button { touch-action: manipulation; }
+.dish, .cat, .pill, .gut button { -webkit-user-select: none; user-select: none; }
+@media (hover: none) { .dish kbd, footer { display: none; } .dish:hover { transform: none; } }
+.track { margin-bottom: 14px; }
+.track .end { bottom: -22px; }
+@media (max-width: 520px) {
+  .cats { display: flex; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat { flex: 0 0 auto; }
+  header p#pitch { font-size: 14px; }
+}
+
+/* ---------- What2Do sticker styles (override the shared layout styles above) ---------- */
+:root[data-cat="food"] { --sticker: var(--peach); }
+:root[data-cat="plans"] { --sticker: var(--mint); }
+:root[data-cat="movies"] { --sticker: var(--sky); }
+:root[data-cat="coin"] { --sticker: var(--butter); }
+:root[data-cat="custom"] { --sticker: var(--pink); }
+body { font-weight: 500; }
+.brand { justify-self: start; font: 800 26px/1 var(--display); letter-spacing: -.02em; color: var(--ink); }
+.brand span { display: inline-block; background: var(--butter); color: var(--on-sticker); border: 2.5px solid var(--ink); border-radius: 10px; padding: 0 6px; margin: 0 2px; transform: rotate(-6deg); box-shadow: 2px 2px 0 var(--ink); }
+header h1 { font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+.eyebrow { display: inline-block; background: var(--sticker); color: var(--on-sticker); border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px; letter-spacing: .06em; }
+.label { color: var(--ink); font-weight: 700; }
+
+.cat { border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); background: var(--paper); }
+.cat b { color: var(--ink); font-weight: 800; font-family: var(--display); }
+.cat[aria-pressed="true"] { background: var(--sticker); box-shadow: 3px 3px 0 var(--ink); }
+.cat[aria-pressed="true"] b, .cat[aria-pressed="true"] small { color: var(--on-sticker); }
+
+.check { border: 2.5px solid var(--ink); border-radius: 22px; box-shadow: var(--shadow); }
+.check::before { display: none; }
+.check-head { background: var(--sticker); border-bottom: 2.5px solid var(--ink); }
+.check-head div { border-color: var(--ink); }
+.check-head small, .check-head b { color: var(--on-sticker); }
+.check-head .no b { color: #B4235A; }
+.track { border-bottom: 2.5px dashed var(--ink); }
+.bubble { background: var(--mint); color: var(--on-sticker); border: 2.5px solid var(--ink); border-radius: 14px; font: 700 15px/1.2 var(--display); box-shadow: 3px 3px 0 var(--ink); }
+
+.fill { border: 2px dashed var(--ink); border-radius: 18px; }
+.line { border-bottom: 2px dashed var(--rule); }
+.line input { font: 700 21px/1.4 var(--display); color: var(--ink); }
+.pill, .chip, .whob, .friends { border: 2px solid var(--ink); color: var(--ink); font-weight: 700; }
+.pill[aria-pressed="true"], .chip[aria-pressed="true"], .whob[aria-pressed="true"] { background: var(--sticker); color: var(--on-sticker); border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.whob[aria-pressed="true"] svg { color: var(--on-sticker); }
+.seg { border: 2px solid var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.act { background: var(--ink); color: var(--bg); border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--sticker); font-weight: 700; }
+.act.alt { background: var(--paper); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.go { background: var(--ink); color: var(--butter); border-radius: 18px; font: 800 22px/1 var(--display); box-shadow: 4px 4px 0 var(--sticker); }
+.ghost { color: var(--ink); font-weight: 700; }
+
+.timer { height: 14px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); }
+.timer i { background: var(--butter); }
+.timer.low i { background: var(--pink); }
+.strikes b { border-color: var(--ink); }
+.strikes b.on { background: var(--pink); border-color: var(--ink); color: var(--on-sticker); }
+.vs { color: var(--ink); font-weight: 800; font-family: var(--display); }
+:root[data-cat] .dish { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: var(--shadow); font: 700 19px/1.1 var(--display); -webkit-mask: none; mask: none; background-image: none; }
+:root[data-cat] .dish:hover { transform: rotate(-1.5deg); }
+:root[data-cat] .dish:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+:root[data-cat] .dish.picked { background: var(--sticker); color: var(--on-sticker); }
+:root[data-cat] .dish.picked .ico, :root[data-cat] .dish.picked .note { color: var(--on-sticker); }
+:root[data-cat="movies"] .dish::before { color: var(--red); }
+:root[data-cat="plans"] .dish::after { border-color: var(--ink); }
+.ico, .ico.big { color: var(--ink); }
+
+.order { justify-self: start; display: inline-block; background: var(--sticker); color: var(--on-sticker); border: 2.5px solid var(--ink); border-radius: 18px; padding: 6px 16px; box-shadow: var(--shadow); font: 800 clamp(30px, 9vw, 44px)/1.05 var(--display); }
+.stamp { background: var(--butter); color: var(--on-sticker); border: 2.5px solid var(--ink); border-radius: 12px; font-family: var(--display); font-weight: 800; box-shadow: 3px 3px 0 var(--ink); opacity: 1; }
+.gut button { border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); font-weight: 700; }
+.gut button:hover { background: var(--sticker); color: var(--on-sticker); }
+.stats { border-color: var(--ink); }
+.stats div { border-color: var(--ink); }
+.stats small { color: var(--muted); }
+
+.roomform, .roominfo { border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: var(--shadow); }
+.code { background: var(--butter); color: var(--on-sticker); border: 2px solid var(--ink); }
+.pchip { border: 2px solid var(--ink); }
+.coin .face { background: var(--butter); color: var(--on-sticker); border: 4px solid var(--ink); box-shadow: none; font: 800 22px/1.05 var(--display); }
+.coin .back { background: var(--pink); border-color: var(--ink); }
+.coin .face small, .coin .back small { color: var(--on-sticker); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">What<span>2</span>Do</div>
+  <div class="cats" role="group" aria-label="What are you deciding?" id="cats"></div>
+  <div class="roombar" id="roombar"></div>
+
+  <header>
+    <div class="headtext">
+      <p class="eyebrow" id="eyebrow">Food</p>
+      <h1 id="h1">The Waiter Is Coming</h1>
+      <p id="pitch"></p>
+    </div>
+    <div class="scene" id="scene" aria-hidden="true"></div>
+  </header>
+
+  <div class="track" aria-hidden="true">
+    <span class="end l" id="endL">Kitchen</span>
+    <span class="end r" id="endR">Table 12</span>
+    <div class="waiter" id="waiter">
+      <div class="bubble" id="bubble" hidden></div>
+      <svg id="fig" viewBox="0 0 56 84" width="56" height="84" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></svg>
+    </div>
+  </div>
+
+  <section class="check" aria-live="polite">
+    <div class="check-head" id="checkhead"></div>
+    <div class="check-body" id="screen"></div>
+  </section>
+
+  <footer id="foot"></footer>
+  <details class="about">
+    <summary>About &amp; privacy</summary>
+    <p><strong>No accounts, no ads, no tracking.</strong> Your name, player id and favorite character are saved only on your phone.</p>
+    <p><strong>Rooms:</strong> when you play with friends, your nickname and votes are kept on our server only for that room. A room and everything in it is deleted after a day with no activity.</p>
+    <p><strong>Movies:</strong> “What’s on” uses the country your connection comes from (never your exact location) to show local releases. Movie data comes from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p><strong>Credits:</strong> font Baloo 2, used under the <a href="fonts/OFL-baloo2.txt" target="_blank" rel="noopener">SIL Open Font License</a>.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+  const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+
+  /* Who walks toward you. "usual" is each category's own character (waiter, driver…);
+     the others replace the drawing and the lines in every category. */
+  const BODY = `<circle cx="24" cy="14" r="8" fill="var(--paper)"/><path d="M24 22 v30 M24 52 l-8 28 M24 52 l8 28"/><path d="M24 30 l-12 14"/><path d="M24 30 l14 -4 l6 -6"/>`;
+  const CHARS = {
+    usual: { name: "The usual" },
+    grandma: {
+      name: "Grandma",
+      draw: `<circle cx="24" cy="5" r="4" fill="var(--paper)"/><circle cx="24" cy="16" r="8" fill="var(--paper)"/><path d="M19 16 h3 M26 16 h3" stroke-width="1.6"/><path d="M24 24 l-11 34 h22 z" fill="var(--paper)"/><path d="M19 58 v22 M29 58 v22"/><path d="M21 31 l-9 12"/><path d="M27 31 l13 8 v41"/><path d="M40 39 q3 -6 7 -1" stroke-width="2"/>`,
+      opener: "Hello, dear!",
+      stall: ["Pick one, sweetheart.", "Back in my day we just ate what was there.", "I’m not getting any younger.", "Your grandpa took five seconds.", "Don’t make me get my glasses."],
+      arrive: ["Grandma picked", "Grandma knows best:", "Trust me, it’s"], ready: "So what will it be, dear?",
+      forced: "Grandma decided for you", swapOk: "Whatever makes you happy, dear.", keepOk: "Good choice, sweetheart."
+    },
+    cat: {
+      name: "The cat",
+      draw: `<path d="M8 50 q-8 -12 0 -26" /><path d="M8 58 q0 -12 14 -12 h14 q10 0 10 10 v6 h-38 z" fill="var(--paper)"/><circle cx="44" cy="42" r="8" fill="var(--paper)"/><path d="M38 37 l0 -9 l6 5 M44 33 l6 -5 l0 9" fill="var(--paper)" stroke-linejoin="round"/><path d="M41 42 h1 M47 42 h1" stroke-width="2.6"/><path d="M13 62 v18 M21 62 v18 M33 62 v18 M41 62 v18"/>`,
+      opener: "Mrrp?",
+      stall: ["Meow.", "*knocks your phone off the table*", "*stares without blinking*", "Mrrrow?", "*sits on your options*"],
+      arrive: ["*sits on*", "The cat chose", "*paws at*"], ready: "Meow?",
+      forced: "The cat decided for you", swapOk: "*slow blink*", keepOk: "Purrrr."
+    },
+    robot: {
+      name: "Robot",
+      draw: `<path d="M24 3 v6"/><circle cx="24" cy="3" r="2" fill="currentColor"/><rect x="14" y="9" width="20" height="15" rx="3" fill="var(--paper)"/><path d="M19 16 h2 M27 16 h2" stroke-width="3"/><rect x="12" y="28" width="24" height="26" rx="3" fill="var(--paper)"/><path d="M19 36 h10 M19 42 h10" stroke-width="1.6"/><path d="M12 33 l-8 12 M36 33 l10 -6"/><path d="M18 54 v26 M30 54 v26"/><path d="M14 80 h8 M26 80 h8"/>`,
+      opener: "HELLO, HUMAN.",
+      stall: ["CALCULATING…", "INDECISION DETECTED.", "BEEP. PICK.", "ERROR: HUMAN TOO SLOW.", "PROCESSING YOUR FEELINGS…"],
+      arrive: ["OPTIMAL CHOICE:", "SELECTED:", "COMPUTED ANSWER:"], ready: "AWAITING INPUT.",
+      forced: "The robot decided for you", swapOk: "RECALCULATING. ACCEPTED.", keepOk: "CHOICE LOGGED."
+    },
+    mom: {
+      name: "Mom",
+      draw: `<path d="M15 22 q-3 -18 9 -18 q12 0 9 18" fill="currentColor"/><circle cx="24" cy="14" r="7" fill="var(--paper)"/><path d="M24 22 v30 M24 52 l-8 28 M24 52 l8 28"/><path d="M24 30 l-10 8 l8 8 M24 30 l10 8 l-8 8"/>`,
+      opener: "Okay, quick.",
+      stall: ["I’m not asking again.", "Do you want me to pick?", "Because I said so.", "We’re leaving in five minutes.", "I’m counting. One…"],
+      arrive: ["Mom decided:", "We’re doing", "Fine, I’ll pick:"], ready: "Well? Which one?",
+      forced: "Mom decided for you", swapOk: "Fine. Last change.", keepOk: "See? Was that so hard?"
+    }
+  };
+  let who = "usual";
+  try { const w = localStorage.getItem("twic-who"); if (CHARS[w]) who = w; } catch (e) {}
+  // The lines the walking character says: the chosen character's, or the category's own.
+  const voice = () => ({ ...cur(), ...(CHARS[who].draw ? CHARS[who] : {}) });
+  const figure = k => CHARS[k].draw || BODY + cur().prop;
+  const drawFigure = () => { $("fig").innerHTML = figure(who); };
+
+  /* ---------- Section looks ----------
+     Each section gets its own small illustration in the header, a doodle for every option
+     (picked from words in the option, e.g. "ramen" → bowl), and its own card style:
+     menu cards for Food, postcards for Plans, tickets for Movies. */
+  const ICONS = {
+    bowl: `<path d="M3 11 h18 a9 7 0 0 1 -18 0 z"/><path d="M8 7 q1 -2 0 -4 M12 7 q1 -2 0 -4 M16 7 q1 -2 0 -4"/>`,
+    pizza: `<path d="M12 21 L3 5 q9 -4 18 0 z"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="12" cy="16" r="1"/>`,
+    burger: `<path d="M4 10 q8 -9 16 0 z"/><path d="M3 13 h18"/><path d="M4 16 h16 v1 a3 3 0 0 1 -3 3 h-10 a3 3 0 0 1 -3 -3 z"/>`,
+    taco: `<path d="M3 17 a9 9 0 0 1 18 0 z"/><path d="M6 13 q2 -2 4 0 q2 -2 4 0 q2 -2 4 0"/>`,
+    sushi: `<ellipse cx="12" cy="9" rx="8" ry="3"/><path d="M4 9 v6 a8 3 0 0 0 16 0 v-6"/><ellipse cx="12" cy="9" rx="3" ry="1.2"/>`,
+    chicken: `<path d="M14 4 a5 5 0 0 1 3 9 l-4 4 l-3 -3 l4 -4 a5 5 0 0 1 0 -6 z"/><path d="M10 14 l-4 4 m-1 -2 l2 2 m-3 0 l2 2"/>`,
+    bread: `<path d="M4 11 a8 5 0 0 1 16 0 v8 h-16 z"/><path d="M8 11 v8 M16 11 v8"/>`,
+    dumpling: `<path d="M3 15 q9 -14 18 0 q-9 5 -18 0 z"/><path d="M8 9 l1 2 M12 7 v2 M16 9 l-1 2"/>`,
+    salad: `<path d="M3 12 h18 a9 7 0 0 1 -18 0 z"/><path d="M7 12 q0 -5 4 -6 M12 12 q1 -5 5 -5 M10 12 q-3 -3 -6 -2"/>`,
+    cup: `<path d="M5 8 h12 v6 a5 5 0 0 1 -5 5 h-2 a5 5 0 0 1 -5 -5 z"/><path d="M17 10 h1 a2 2 0 0 1 0 4 h-1"/><path d="M9 3 q1 2 0 3 M13 3 q1 2 0 3"/>`,
+    cake: `<path d="M4 12 h16 v8 h-16 z"/><path d="M4 15 q2 2 4 0 q2 2 4 0 q2 2 4 0 q2 2 4 0"/><path d="M12 12 v-4"/><path d="M12 5 q1 1 0 2 q-1 -1 0 -2"/>`,
+    plate: `<circle cx="12" cy="12" r="6"/><path d="M3 4 v6 a2 2 0 0 0 2 2 v8 M5 4 v6 M21 4 q-3 2 -2 8 h2 v8"/>`,
+    tree: `<path d="M12 3 l6 9 h-3 l4 6 h-14 l4 -6 h-3 z"/><path d="M12 18 v3"/>`,
+    museum: `<path d="M3 9 l9 -5 l9 5 z"/><path d="M5 9 v9 M9 9 v9 M15 9 v9 M19 9 v9 M3 20 h18"/>`,
+    pin: `<path d="M12 21 s-6 -6 -6 -11 a6 6 0 0 1 12 0 c0 5 -6 11 -6 11 z"/><circle cx="12" cy="10" r="2"/>`,
+    sun: `<circle cx="12" cy="10" r="4"/><path d="M12 2 v2 M4 10 h2 M18 10 h2 M6.5 4.5 l1.4 1.4 M17.5 4.5 l-1.4 1.4"/><path d="M2 18 q3 -2 5 0 q3 2 5 0 q3 -2 5 0 q3 2 5 0"/>`,
+    music: `<path d="M9 18 v-13 l10 -2 v13"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>`,
+    bike: `<circle cx="6" cy="16" r="4"/><circle cx="18" cy="16" r="4"/><path d="M6 16 l4 -8 h5 l3 8 M10 8 l3 8 h-7 M14 5 h3"/>`,
+    dice: `<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="12" cy="12" r="1.2"/>`,
+    bag: `<path d="M5 8 h14 l-1 12 h-12 z"/><path d="M9 8 v-2 a3 3 0 0 1 6 0 v2"/>`,
+    bowling: `<path d="M10 3 q-2 3 -1 6 q-3 5 0 12 h4 q3 -7 0 -12 q1 -3 -1 -6 z"/><path d="M9 7 h4"/>`,
+    home: `<path d="M3 11 l9 -7 l9 7 M5 10 v10 h14 v-10"/><path d="M10 20 v-5 h4 v5"/>`,
+    film: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5 v14 M17 5 v14 M3 9 h4 M3 15 h4 M17 9 h4 M17 15 h4"/>`,
+    mask: `<path d="M4 5 h16 v6 a8 8 0 0 1 -16 0 z"/><path d="M8 9 h2 M14 9 h2"/><path d="M9 13 q3 3 6 0"/>`,
+    ghost: `<path d="M6 21 v-10 a6 6 0 0 1 12 0 v10 l-2 -2 l-2 2 l-2 -2 l-2 2 l-2 -2 z"/><path d="M10 10 v1 M14 10 v1"/>`,
+    heart: `<path d="M12 20 s-8 -5 -8 -11 a4 4 0 0 1 8 -1 a4 4 0 0 1 8 1 c0 6 -8 11 -8 11 z"/>`,
+    rocket: `<path d="M12 3 q5 4 5 11 l-2 3 h-6 l-2 -3 q0 -7 5 -11 z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 17 l-1 4 M15 17 l1 4 M12 17 v3"/>`,
+    star: `<path d="M12 3 l2.7 5.6 l6.1 .9 l-4.4 4.3 l1 6.1 l-5.4 -2.9 l-5.4 2.9 l1 -6.1 l-4.4 -4.3 l6.1 -.9 z"/>`,
+    magnifier: `<circle cx="10" cy="10" r="6"/><path d="M15 15 l6 6"/>`,
+    coin: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="5"/>`
+  };
+  // First matching rule wins; the last rule in each list is the fallback.
+  const ICON_RULES = {
+    food: [
+      [/ramen|pho|noodle|soup|curry|hot ?pot|bibimbap|udon|laksa|chili|stew|pad /, "bowl"],
+      [/pizza/, "pizza"], [/burger|hot dog/, "burger"], [/taco|burrito|quesadilla|nacho|birria|mexican/, "taco"],
+      [/sushi|sashimi|poke|maki|japanese/, "sushi"], [/chicken|wing|bbq|korean bbq|kebab|shawarma|souvlaki|steak|meat/, "chicken"],
+      [/bagel|sandwich|bánh|banh|bread|toast|deli|croissant/, "bread"], [/dumpling|dim sum|gyoza|bao/, "dumpling"],
+      [/salad|mezze|greek|vegan|vegetarian|healthy/, "salad"], [/coffee|tea|café|cafe|boba|bubble/, "cup"],
+      [/cake|dessert|ice cream|waffle|donut|pastry|bakery|sweet/, "cake"], [/./, "plate"]
+    ],
+    plans: [
+      [/park|hike|picnic|walk|garden|trail|nature/, "tree"], [/museum|gallery|exhibit|art/, "museum"],
+      [/beach|lake|swim|pool|sunset/, "sun"], [/karaoke|music|concert|live|dance|club/, "music"],
+      [/bike|cycl|skate/, "bike"], [/board game|game|puzzle|arcade|escape/, "dice"],
+      [/thrift|market|shop|mall|bookstore|book/, "bag"], [/bowling|golf|climb|gym|sport/, "bowling"],
+      [/movie|cinema|film|matinee/, "film"], [/stay in|home|cook|recipe|pizza in/, "home"],
+      [/coffee|café|cafe|bakery|brunch/, "cup"], [/./, "pin"]
+    ],
+    movies: [
+      [/horror|scary|regret|ghost/, "ghost"], [/comedy|funny|caper|chaos|sing/, "mask"], [/romance|love|heart|sisters/, "heart"],
+      [/sci-fi|space|alien|multiverse|time-loop|dream/, "rocket"], [/mystery|thriller|whodunit|crime/, "magnifier"],
+      [/animation|family|ghibli|comfort|bear|tissues/, "star"], [/./, "film"]
+    ],
+    coin: [[/./, "coin"]]
+  };
+  function iconFor(name, note) {
+    const rules = ICON_RULES[cat];
+    if (!rules) return "";
+    const text = `${name} ${note || ""}`.toLowerCase();
+    const key = rules.find(([re]) => re.test(text))[1];
+    return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[key]}</svg>`;
+  }
+
+  // Header illustrations (small, gently animated; they hold still for reduced motion).
+  const SCENES = {
+    food: `<svg viewBox="0 0 120 96" aria-hidden="true">
+      <g class="steam" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round"><path d="M44 30 q6 -8 0 -16 q-6 -8 0 -14"/><path d="M60 30 q6 -8 0 -16 q-6 -8 0 -14"/><path d="M76 30 q6 -8 0 -16 q-6 -8 0 -14"/></g>
+      <path d="M14 46 h92 a46 34 0 0 1 -92 0 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="2.4"/>
+      <path d="M24 58 q36 14 72 0" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M88 20 l-26 30 M96 24 l-26 30" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="46" cy="44" r="5" fill="var(--paper)" stroke="var(--green)" stroke-width="2.4"/><circle cx="46" cy="44" r="2" fill="var(--red)"/></svg>`,
+    plans: `<svg viewBox="0 0 120 96" aria-hidden="true">
+      <path d="M8 22 l34 -10 l36 10 l34 -10 v62 l-34 10 l-36 -10 l-34 10 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M42 12 v62 M78 22 v62" stroke="var(--rule)" stroke-width="2"/>
+      <path class="route" d="M18 64 q16 -26 34 -8 t40 -28" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-dasharray="5 5" stroke-linecap="round"/>
+      <g class="bounce"><path d="M92 34 s-9 -9 -9 -16 a9 9 0 0 1 18 0 c0 7 -9 16 -9 16 z" fill="var(--red)"/><circle cx="92" cy="18" r="3.2" fill="var(--paper)"/></g></svg>`,
+    movies: `<svg viewBox="0 0 120 96" aria-hidden="true">
+      <g class="tilt">
+      <path d="M10 26 h100 v14 a6 6 0 0 0 0 12 v14 h-100 v-14 a6 6 0 0 0 0 -12 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M82 28 v36" stroke="var(--rule)" stroke-width="2" stroke-dasharray="3 4"/>
+      <text x="46" y="44" text-anchor="middle" font-family="var(--mono)" font-size="9" font-weight="600" letter-spacing="1.5" fill="var(--red)">ADMIT</text>
+      <text x="46" y="57" text-anchor="middle" font-family="var(--mono)" font-size="9" font-weight="600" letter-spacing="1.5" fill="var(--red)">ONE</text>
+      <text x="96" y="50" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--muted)">No.</text></g>
+      <g class="sparkle" fill="var(--green)"><path d="M100 8 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2 z"/><path d="M18 74 l1.5 4 l4 1.5 l-4 1.5 l-1.5 4 l-1.5 -4 l-4 -1.5 l4 -1.5 z"/></g></svg>`,
+    coin: `<svg viewBox="0 0 120 96" aria-hidden="true"><g class="flipcoin"><circle cx="60" cy="48" r="32" fill="var(--paper)" stroke="var(--green)" stroke-width="4"/><circle cx="60" cy="48" r="24" fill="none" stroke="var(--rule)" stroke-width="2"/><text x="60" y="54" text-anchor="middle" font-family="var(--display)" font-size="20" fill="var(--green)">H</text></g></svg>`
+  };
+
+  const PICKS = 5; // how many options Shuffle and What’s on put in the list
+
+  /* Built-in pools for Shuffle. Each entry: [name, note, tags]. */
+  const POOLS = {
+    food: [
+      ["Pepperoni pizza", "Italian", "comfort cheap"], ["Tonkotsu ramen", "Japanese", "comfort"], ["Al pastor tacos", "Mexican", "cheap spicy"],
+      ["Sushi set", "Japanese", "light"], ["Pho", "Vietnamese", "light comfort"], ["Smash burger", "American", "comfort cheap"],
+      ["Green curry", "Thai", "spicy"], ["Soup dumplings", "Chinese", "comfort"], ["Korean BBQ", "Korean", "comfort"],
+      ["Poke bowl", "Hawaiian", "light"], ["Chicken shawarma", "Middle Eastern", "cheap"], ["Nashville hot chicken", "Southern", "spicy comfort"],
+      ["Cacio e pepe", "Italian", "comfort"], ["Bibimbap", "Korean", "light"], ["Butter chicken + naan", "Indian", "comfort"],
+      ["Bagel with lox", "Deli", "light cheap"], ["Mezze platter", "Mediterranean", "light"], ["Mala hot pot", "Sichuan", "spicy"],
+      ["Bánh mì", "Vietnamese", "cheap"], ["Dim sum", "Cantonese", "comfort"], ["Lamb biryani", "Indian", "spicy"],
+      ["Birria tacos", "Mexican", "spicy comfort"], ["Greek salad + souvlaki", "Greek", "light"], ["Pad kra pao", "Thai", "spicy cheap"]
+    ],
+    plans: [
+      ["Pottery class", "Hands-on", "indoors"], ["Night market", "Food + browsing", "outdoors social"], ["Sunset hike", "Bring water", "outdoors free"],
+      ["Stay in, order pizza", "Zero effort", "indoors low"], ["Museum afternoon", "Check free days", "indoors"], ["Picnic in the park", "Blanket + snacks", "outdoors free low"],
+      ["Thrift store crawl", "Three shops minimum", "indoors social"], ["Bowling", "Shoe rental included", "indoors social"], ["Bike ride + coffee", "Loop back to a café", "outdoors"],
+      ["Board game café", "Pick something new", "indoors social"], ["Bookstore + bakery", "One book, one pastry", "indoors low"], ["Karaoke", "Private room", "indoors social"],
+      ["Farmers market", "Go early", "outdoors social"], ["Movie matinee", "Cheapest showing", "indoors low"], ["Beach or lake day", "Sunscreen", "outdoors free"],
+      ["Climbing gym", "Day pass", "indoors"], ["Cook a new recipe together", "One you've never made", "indoors free low"], ["Live music bar", "Check who's on", "social"],
+      ["Walk a new neighborhood", "No destination", "outdoors free low"], ["Mini golf", "Loser buys ice cream", "outdoors social"]
+    ],
+    movies: [
+      ["Paddington 2", "2017 · pure comfort", "comfort funny"], ["The Grand Budapest Hotel", "2014 · pastel caper", "funny"], ["Spirited Away", "2001 · Ghibli classic", "comfort mind"],
+      ["Get Out", "2017 · sharp horror", "scary"], ["Hereditary", "2018 · you'll regret it", "scary"], ["Arrival", "2016 · aliens + language", "mind feelings"],
+      ["Inception", "2010 · dreams in dreams", "mind"], ["Knives Out", "2019 · whodunit", "funny"], ["Everything Everywhere All at Once", "2022 · multiverse + mom", "mind feelings funny"],
+      ["Past Lives", "2023 · quiet heartbreak", "feelings"], ["Mamma Mia!", "2008 · sing along", "comfort funny"], ["Superbad", "2007 · teen chaos", "funny"],
+      ["The Princess Bride", "1987 · inconceivable", "comfort funny"], ["Parasite", "2019 · class thriller", "mind scary"], ["Interstellar", "2014 · space + tears", "mind feelings"],
+      ["A Quiet Place", "2018 · shh", "scary"], ["Little Women", "2019 · sisters", "comfort feelings"], ["Before Sunrise", "1995 · one long walk", "feelings"],
+      ["Mad Max: Fury Road", "2015 · pure adrenaline", "mind"], ["Coco", "2017 · bring tissues", "comfort feelings"], ["Palm Springs", "2020 · time-loop rom-com", "funny mind"],
+      ["Eternal Sunshine of the Spotless Mind", "2004 · memory + love", "feelings mind"], ["Hot Fuzz", "2007 · village cop comedy", "funny"], ["The Others", "2001 · slow-burn ghost story", "scary"]
+    ]
+  };
+
+  /* Each category reskins the same game. `fill` turns on Shuffle / Ask AI. */
+  const CATS = {
+    food: {
+      tab: "Food", sub: "Where to eat", usualName: "The waiter",
+      title: "The Waiter Is Coming",
+      pitch: "For people who have read the whole menu three times and still say “oh, you go first.” Get some options, pick fast, and every time you stall the waiter takes a step closer.",
+      ends: ["Kitchen", "Table 12"],
+      prop: `<path d="M36 16 h18" stroke-width="3"/><path d="M17 32 h14 v18 h-14 z" fill="var(--paper)" stroke-width="1.6"/><path d="M17 6 q7 -6 14 0" stroke-width="2"/>`,
+      head: [["Table", "12"], ["Guests", "1"], ["Server", () => "#" + rnd(1, 40).toString().padStart(2, "0")], ["Check No.", () => rnd(100000, 999999)]],
+      noun: "option", nouns: "options",
+      ask: "What are you torn between?", placeholder: "another dish or place…",
+      fill: {
+        filters: [["any", "Anything"], ["comfort", "Comfort"], ["light", "Light"], ["spicy", "Spicy"], ["cheap", "Cheap"]],
+      },
+      sample: [["Spicy vodka rigatoni", "Italian"], ["Smash burger", "American"], ["Miso salmon bowl", "Japanese"], ["Fish tacos", "Mexican"]],
+      paceQ: "How busy is the restaurant?", pace: ["Quiet Tuesday", "Friday 7pm", "Brunch rush"],
+      go: "Wave the waiter over", opener: "Be right with you!",
+      stall: ["Take your time!", "…any questions about the menu?", "Still deciding?", "I can come back…", "The specials are on the board."],
+      arrive: ["I'll put you down for", "Chef's choice it is:", "You look like a"],
+      ready: "Ready to order?",
+      win: "You’re going with", forced: "The waiter decided for you",
+      gut: "The pen hits the pad. You feel…",
+      swapOk: "Changing it. No problem.", keepOk: "Excellent choice.",
+      keepMsg: "No second-guessing allowed. Close the menu now. Don’t ask what anyone else is getting.",
+      swapMsg: (w, f) => `Your gut flinched at <strong>${w}</strong>, so it was never the one. Go with ${f} and don’t reopen the menu.`,
+      stamp: "ORDERED"
+    },
+    plans: {
+      tab: "Plans", sub: "What to do", usualName: "Your ride",
+      title: "The Car Is Outside",
+      pitch: "For the friend who answers “I’m down for whatever” and means it as a threat. Get some ideas for today. Your ride is already pulling up, and every stall brings them closer to honking.",
+      ends: ["End of the street", "Your door"],
+      prop: `<circle cx="47" cy="17" r="5" stroke-width="2"/><path d="M47 22 v6 M47 25 h3" stroke-width="2"/><path d="M15 6 h18 M18 6 q6 -6 12 0" stroke-width="2"/>`,
+      head: [["Crew", "4"], ["Budget", "$$"], ["Driver", () => pick(["Sam", "Jo", "Max", "Riley"])], ["Plan No.", () => rnd(1000, 9999)]],
+      noun: "plan", nouns: "plans",
+      ask: "What could you do today?", placeholder: "another plan…",
+      fill: {
+        filters: [["any", "Anything"], ["outdoors", "Outdoors"], ["indoors", "Indoors"], ["free", "Free"], ["low", "Low-energy"]],
+      },
+      sample: [["Pottery class", "Hands-on"], ["Night market", "Food + browsing"], ["Sunset hike + iced coffee", "Bring water"], ["Stay in, order pizza", "Zero effort"]],
+      paceQ: "How patient is your ride?", pace: ["Has a podcast on", "Engine running", "Already honking"],
+      go: "Tell them you’re ready", opener: "Leaving in 5!",
+      stall: ["Soooo…?", "Just pick something!", "I'm outside btw", "*honk*", "We're losing daylight."],
+      arrive: ["Okay we're doing", "I'm deciding:", "Get in, we're going to"],
+      ready: "Get in!",
+      win: "Today you’re doing", forced: "Your ride decided for you",
+      gut: "You type it in the group chat. You feel…",
+      swapOk: "Rerouting!", keepOk: "Love that, let's go.",
+      keepMsg: "Put your shoes on. No “actually, what about…” in the car.",
+      swapMsg: (w, f) => `Your gut flinched at <strong>${w}</strong>. Go with ${f}, and send it to the chat before you can change your mind.`,
+      stamp: "BOOKED"
+    },
+    movies: {
+      tab: "Movies", sub: "What to watch", usualName: "Popcorn friend",
+      title: "The Popcorn Is Getting Cold",
+      pitch: "For the 40 minutes spent scrolling before watching nothing. Get some picks. Someone is walking back from the microwave, and each stall gets the popcorn colder.",
+      ends: ["Microwave", "Couch"],
+      prop: `<path d="M38 18 l3 14 h10 l3 -14 z" fill="var(--paper)" stroke-width="2"/><path d="M39 18 q2 -5 5 -2 q3 -5 6 0 q3 -3 4 2" stroke-width="2"/><path d="M16 7 h16" stroke-width="2"/>`,
+      head: [["Couch", "Left side"], ["Viewers", "2"], ["Remote", "You"], ["Queue No.", () => rnd(10, 99)]],
+      noun: "title", nouns: "titles",
+      ask: "What are you scrolling past?", placeholder: "another title…",
+      fill: {
+        filters: [["any", "Anything"], ["comfort", "Comfort"], ["funny", "Funny"], ["scary", "Scary"], ["feelings", "Big feelings"], ["mind", "Mind-bending"]],
+        aiButton: `Get ${PICKS} movies`,
+        tmdb: true, modeLabel: "What’s on", // real releases in the player's country from TMDB (free)
+      },
+      sample: [["Paddington 2", "2017 · pure comfort"], ["Arrival", "2016 · aliens + language"], ["Knives Out", "2019 · whodunit"], ["Hereditary", "2018 · you'll regret it"]],
+      paceQ: "How hot is the popcorn?", pace: ["Still popping", "Warm", "Already stale"],
+      go: "Hit the couch", opener: "Popcorn's done!",
+      stall: ["Still scrolling?", "Just press play.", "The trailer isn't the movie.", "I'm eating this without you.", "It's getting late."],
+      arrive: ["I'm pressing play on", "We're watching", "Remote's mine:"],
+      ready: "What are we watching?",
+      win: "Tonight you’re watching", forced: "The remote was taken from you",
+      gut: "The title card appears. You feel…",
+      swapOk: "Switching it.", keepOk: "Good pick.",
+      keepMsg: "Put the remote down. No checking reviews halfway through.",
+      swapMsg: (w, f) => `Your gut flinched at <strong>${w}</strong>. Put on ${f} and leave the menu screen.`,
+      stamp: "NOW PLAYING"
+    },
+    custom: {
+      tab: "Custom", sub: "Your own list", usualName: "A friend",
+      title: "Someone Needs an Answer",
+      pitch: "Any decision, any list. Name what you’re deciding, type your options, and a friend with a stopwatch walks closer every time you stall.",
+      ends: ["Across the room", "Right here"],
+      prop: `<circle cx="47" cy="16" r="7" fill="var(--paper)" stroke-width="2"/><path d="M47 16 v-4 M47 16 h3 M45 7 h4" stroke-width="2"/><path d="M16 7 h16" stroke-width="2"/>`,
+      head: [["Decision", () => CATS.custom.topic.trim() || "Untitled"], ["Options", () => filled().length], ["Timer", () => PACE_SEC[pace] + "s"], ["Ref No.", () => rnd(1000, 9999)]],
+      noun: "option", nouns: "options",
+      ask: "Your options", placeholder: "type an option…", topic: "", // starts blank
+      sample: [],
+      paceQ: "How much time per pick?", pace: ["Relaxed", "Normal", "Panic"],
+      go: "Start the clock", opener: "Clock's running!",
+      stall: ["Tick tock.", "Any day now.", "You already know.", "Pick one!", "Stop overthinking."],
+      arrive: ["I'm picking:", "Done. It's", "Final answer:"],
+      ready: "Well?",
+      win: "You’re going with", forced: "Your friend decided for you",
+      gut: "It’s settled. You feel…",
+      swapOk: "Switched.", keepOk: "Settled.",
+      keepMsg: "It’s decided. Don’t reopen it.",
+      swapMsg: (w, f) => `Your gut flinched at <strong>${w}</strong>. Go with ${f} and don’t look back.`,
+      stamp: "DECIDED"
+    }
+    ,
+    coin: {
+      tab: "Coin", sub: "Heads or tails", usualName: "A friend", coinOnly: true,
+      title: "Leave It to the Coin",
+      pitch: "Two options, zero patience. Name heads and tails, flip, and see how you feel when it lands. If your stomach drops, you just found out what you really wanted.",
+      ends: ["Your pocket", "The table"],
+      prop: `<circle cx="47" cy="16" r="7" fill="var(--paper)" stroke-width="2"/><path d="M44 16 h6" stroke-width="2"/><path d="M16 7 h16" stroke-width="2"/>`,
+      head: [["Mode", "Coin flip"], ["Sides", "2"], ["Flips", () => flips], ["Ref No.", () => rnd(1000, 9999)]],
+      noun: "side", nouns: "sides",
+      ask: "Heads or tails", placeholder: "", sample: [],
+      paceQ: "", pace: ["", "", ""], go: "Flip the coin", opener: "Call it!",
+      stall: ["Flip it already."], arrive: ["Flipping:"], ready: "Heads or tails?",
+      win: "The coin says", forced: "The coin decided",
+      gut: "It lands. You feel…",
+      swapOk: "Overruled the coin. Fair.", keepOk: "The coin knows.",
+      keepMsg: "The coin has spoken, and you agree. Done.",
+      swapMsg: (w, f) => `You flinched when it landed on <strong>${w}</strong>. You wanted ${f} all along.`,
+      stamp: "FLIPPED"
+    }
+  };
+  const PACE_SEC = [5, 3, 1.8];
+  // A short vibration on phones that allow it (most Android browsers; iPhones ignore it).
+  const buzz = kind => {
+    try { if (navigator.vibrate) navigator.vibrate(kind === "pick" ? 15 : kind === "stall" ? 60 : [30, 40, 30]); } catch (e) {}
+  };
+  const STEPS = 3; // stalls before they reach you
+
+  const $ = id => document.getElementById(id);
+  const screen = $("screen"), waiter = $("waiter"), bubble = $("bubble");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  let cat = "food";
+  try { const s = localStorage.getItem("twic-cat"); if (CATS[s]) cat = s; } catch (e) {}
+  for (const k in CATS) {
+    const c = CATS[k];
+    c.list = c.sample.length ? c.sample.map(([n]) => n) : ["", ""]; // blank categories get two empty lines
+    c.notes = Object.fromEntries(c.sample.filter(s => s[1]).map(([n, note]) => [n, note]));
+    c.mode = "shuffle"; c.filter = "any"; c.query = "";
+    c.found = 0; c.urls = {}; c.where = "theatres";
+  }
+  let pace = 1, game = null, raf = 0;
+  const cur = () => CATS[cat];
+  const filled = () => cur().list.map(d => d.trim()).filter(Boolean);
+
+  /* ---------- Live lists ----------
+     Movies → "What’s on" asks our backend (/api/movies), which holds the TMDB key. */
+  // The backend lives on the same site as the game, so requests use relative addresses.
+  const API_BASE = "";
+  let aiState = "ready", aiCtl = null, aiBusy = false, aiMsg = "", aiErr = false;
+
+  const ERR = {
+    rate_limited: "Too many requests right now. Wait a minute and try again.",
+    session_expired: "Your session expired. Sign in again, then retry.",
+    not_configured: "This isn’t set up on the server yet. Shuffle still works.",
+    upstream_error: "Couldn’t reach the live list. Check your connection and try again."
+  };
+
+  // Put a live list (e.g. the movies from "What’s on") into the options.
+  function showPicks(chosen) {
+    const c = cur();
+    c.list = chosen.map(x => x.name);
+    c.notes = Object.fromEntries(chosen.map(x => [x.name, [x.note, x.area].filter(Boolean).join(" · ")]));
+    c.urls = Object.fromEntries(chosen.filter(x => x.url).map(x => [x.name, x.url]));
+  }
+
+  // Ask one of our free data endpoints for PICKS random picks. If it fails for any reason,
+  // fall back to the built-in list so players always get something to play with.
+  async function fetchPicks(path, body, busyMsg, okMsg, emptyMsg) {
+    const c = cur(), forCat = cat;
+    aiCtl = new AbortController(); aiBusy = true; aiErr = false; aiMsg = busyMsg;
+    refreshFill();
+    let fallback = "";
+    try {
+      let res;
+      try {
+        res = await fetch(API_BASE + path, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: aiCtl.signal
+        });
+      } catch (e) { throw { code: e && e.name === "AbortError" ? "cancelled" : "upstream_error" }; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw { code: data.code || "upstream_error" };
+      const items = (Array.isArray(data.items) ? data.items : []).filter(x => x && typeof x.name === "string" && x.name.trim());
+      if (items.length < 2) { aiErr = true; aiMsg = emptyMsg; return; }
+      CATS[forCat].found = data.found || items.length;
+      if (cat === forCat) showPicks(items);
+      aiMsg = okMsg(CATS[forCat].found, items.length, data);
+    } catch (e) {
+      if (e && e.code === "cancelled") { aiMsg = ""; return; }
+      // Anything went wrong: use the built-in list instead.
+      fallback = e && e.code === "rate_limited" ? "It’s busy right now" : "Couldn’t reach the live list";
+    } finally {
+      aiBusy = false; aiCtl = null;
+      if (fallback && cat === forCat) {
+        shuffleInto(c);
+        aiMsg = `${fallback}, so here are ${c.list.length} from our own list instead.`;
+      }
+      if (cat === forCat && !game) renderSetup();
+    }
+  }
+
+
+  const COUNTRY = new Intl.DisplayNames(["en"], { type: "region" });
+  function findMovies() {
+    const c = cur(), streaming = c.where === "streaming";
+    return fetchPicks("/api/movies", { where: c.where, filter: c.filter, count: PICKS },
+      streaming ? "Checking what’s streaming" : "Checking what’s in theatres",
+      (found, n, data) => {
+        let place = "your country";
+        try { if (data.country) place = COUNTRY.of(data.country); } catch (e) {}
+        return `${n} random picks from ${found} movies ${streaming ? "streaming" : "in theatres"} in ${place}.`;
+      },
+      "Couldn’t find enough movies for that mood. Try Anything.");
+  }
+
+
+  function askAI() {
+    if (aiBusy) return;
+    if (cur().fill.tmdb) return findMovies();
+  }
+
+
+  // Fill the list with PICKS random picks from the built-in list (topped up from the whole list
+  // if a filter leaves fewer than PICKS).
+  function shuffleInto(c) {
+    const pool = POOLS[cat];
+    const ok = c.filter === "any" ? pool : pool.filter(p => p[2].split(" ").includes(c.filter));
+    const chosen = shuffle(ok).slice(0, PICKS);
+    if (chosen.length < PICKS) chosen.push(...shuffle(pool.filter(p => !chosen.includes(p))).slice(0, PICKS - chosen.length));
+    c.list = chosen.map(p => p[0]);
+    c.notes = Object.fromEntries(chosen.map(p => [p[0], p[1]]));
+    c.urls = {}; c.found = 0;
+  }
+  function doShuffle() {
+    shuffleInto(cur());
+    aiMsg = ""; aiErr = false;
+    renderSetup();
+  }
+
+  /* ---------- chrome per category ---------- */
+  function renderCats() {
+    $("cats").innerHTML = Object.entries(CATS).map(([k, c]) =>
+      `<button class="cat" data-cat="${k}" aria-pressed="${k === cat}"><b>${c.tab}</b><small>${c.sub}</small></button>`).join("");
+    $("cats").querySelectorAll("[data-cat]").forEach(b => b.onclick = () => {
+      if (room && (!room.isHost || room.state && room.state.phase !== "lobby")) return; // only the host picks, between games
+      cancelAnimationFrame(raf); game = null;
+      if (aiCtl) aiCtl.abort();
+      cat = b.dataset.cat; aiMsg = ""; aiErr = false;
+      try { localStorage.setItem("twic-cat", cat); } catch (e) {}
+      applyCat();
+    });
+  }
+  function renderHead() {
+    $("checkhead").innerHTML = cur().head.map(([k, v], i) =>
+      `<div class="${i === 3 ? "no" : ""}"><small>${k}</small><b>${esc(typeof v === "function" ? v() : v)}</b></div>`).join("");
+  }
+  function applyCat() {
+    setChrome();
+    renderSetup();
+  }
+  function setChrome() {
+    const c = cur();
+    renderCats();
+    $("eyebrow").textContent = c.tab + " · " + c.sub;
+    $("h1").textContent = c.title;
+    $("pitch").textContent = c.pitch;
+    $("endL").textContent = c.ends[0]; $("endR").textContent = c.ends[1];
+    document.documentElement.dataset.cat = cat; // switches the section's card style
+    $("scene").innerHTML = SCENES[cat] || "";
+    drawFigure();
+    $("foot").textContent = `Keys: ← / → or 1 / 2 to pick. Works best with 3–12 ${c.nouns}.`;
+    renderHead();
+  }
+
+  function moveWaiter(step, say) {
+    const track = waiter.parentElement.clientWidth - 56;
+    waiter.style.left = Math.round((step / STEPS) * track) + "px";
+    waiter.classList.remove("walk"); void waiter.offsetWidth; waiter.classList.add("walk");
+    if (say) { bubble.textContent = say; bubble.hidden = false; } else bubble.hidden = true;
+    bubble.style.left = step >= 2 ? "auto" : "50px";
+    bubble.style.right = step >= 2 ? "50px" : "auto";
+  }
+
+  /* ---------- setup ---------- */
+  // The options box: Shuffle (built-in list) for every section, plus "What’s on" (TMDB) for Movies.
+  function fillPanel() {
+    const c = cur(), f = c.fill;
+    if (!f) return "";
+    if (!f.tmdb) c.mode = "shuffle";
+    const chips = f.filters.map(([k, l]) => `<button class="chip" data-filter="${k}" aria-pressed="${k === c.filter}">${l}</button>`).join("");
+    const body = c.mode === "ai" ? `
+        <div class="chips" role="group" aria-label="Where to watch">
+          <button class="chip" data-where="theatres" aria-pressed="${c.where === "theatres"}">In theatres</button>
+          <button class="chip" data-where="streaming" aria-pressed="${c.where === "streaming"}">Streaming</button>
+        </div>
+        <div class="row">
+          <button class="act" id="askai" ${aiBusy ? "disabled" : ""}>${f.aiButton}</button>
+          ${aiBusy ? `<button class="act alt" id="stopai">Stop</button>` : ""}
+          ${!aiBusy && c.found > c.list.length ? `<button class="act alt" id="repick">Pick ${PICKS} different ones</button>` : ""}
+        </div>` : `
+        <div class="row"><button class="act" id="shuf">Shuffle ${PICKS} ${c.nouns}</button></div>`;
+    return `
+      <div class="fill" id="fill">
+        ${f.tmdb ? `<div class="seg" role="group" aria-label="How to get options">
+          <button data-mode="shuffle" aria-pressed="${c.mode === "shuffle"}">Shuffle</button>
+          <button data-mode="ai" aria-pressed="${c.mode === "ai"}">${f.modeLabel}</button>
+        </div>` : ""}
+        <div class="chips" role="group" aria-label="Filter">${chips}</div>
+        ${body}
+        <p class="status ${aiErr ? "err" : ""} ${aiBusy ? "thinking" : ""}" id="aimsg">${esc(aiMsg)}</p>
+        ${f.tmdb && c.mode === "ai" ? `<p class="status" style="font-size:12px"><a href="https://www.themoviedb.org" target="_blank" rel="noopener" style="color:inherit"><img src="img/tmdb.svg" alt="TMDB" style="height:10px;vertical-align:middle"></a> Movie data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener" style="color:inherit">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>` : ""}
+      </div>`;
+  }
+
+  function refreshFill() {
+    const el = $("fill");
+    if (!el || game) return;
+    el.outerHTML = fillPanel();
+    wireFill();
+  }
+
+  function wireFill() {
+    const c = cur();
+    if (!$("fill")) return;
+    $("fill").querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { c.mode = b.dataset.mode; aiMsg = ""; aiErr = false; refreshFill(); });
+    $("fill").querySelectorAll("[data-filter]").forEach(b => b.onclick = () => { c.filter = b.dataset.filter; refreshFill(); });
+    $("fill").querySelectorAll("[data-where]").forEach(b => b.onclick = () => { c.where = b.dataset.where; c.found = 0; refreshFill(); });
+    const shuf = $("shuf"); if (shuf) shuf.onclick = doShuffle;
+    const rp = $("repick"); if (rp) rp.onclick = askAI;
+    const a = $("askai"); if (a) a.onclick = askAI;
+    const st = $("stopai"); if (st) st.onclick = () => aiCtl && aiCtl.abort();
+  }
+
+  function hintText(n) {
+    return n < 2 ? `You need at least two ${cur().nouns} to be indecisive about.` : `${n} ${cur().nouns}. ${STEPS} stalls and they decide for you.`;
+  }
+
+  /* Coin section: name both sides and flip. Uses the same coin animation, verdict and gut check. */
+  let flips = 0;
+  function renderCoinSetup() {
+    const c = cur();
+    screen.innerHTML = `
+      <div class="field"><label for="coinA">Heads</label><input id="coinA" value="${esc(c.list[0] || "")}" placeholder="e.g. Go out" maxlength="40"></div>
+      <div class="field"><label for="coinB">Tails</label><input id="coinB" value="${esc(c.list[1] || "")}" placeholder="e.g. Stay in" maxlength="40"></div>
+      <div class="label">Who’s flipping?</div>
+      <div class="who" role="group" aria-label="Who’s flipping">
+        ${Object.entries(CHARS).map(([k, ch]) => `
+          <button class="whob" data-who="${k}" aria-pressed="${k === who}">
+            <svg viewBox="0 0 56 84" width="28" height="42" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">${figure(k)}</svg>
+            <span>${k === "usual" ? c.usualName : ch.name}</span>
+          </button>`).join("")}
+      </div>
+      <button class="go" id="flip">Flip the coin</button>
+      <p class="hint">Leave a side empty and it’s just “Heads” or “Tails”.</p>`;
+    const a = $("coinA"), b = $("coinB");
+    a.oninput = () => { c.list[0] = a.value; };
+    b.oninput = () => { c.list[1] = b.value; };
+    screen.querySelectorAll("[data-who]").forEach(btn => btn.onclick = () => {
+      who = btn.dataset.who;
+      try { localStorage.setItem("twic-who", who); } catch (e) {}
+      drawFigure(); renderCoinSetup(); moveWaiter(0, voice().opener);
+    });
+    $("flip").onclick = flipFromSection;
+    if (room) {
+      $("flip").textContent = "Start the vote for everyone";
+      $("flip").onclick = () => startRoom([(c.list[0] || "").trim() || "Heads", (c.list[1] || "").trim() || "Tails"]);
+    }
+  }
+  function flipFromSection() {
+    const c = cur();
+    const a = (c.list[0] || "").trim() || "Heads", b = (c.list[1] || "").trim() || "Tails";
+    flips++; renderHead();
+    game = { strikes: 0, stalls: 0, times: [], total: 1, a, b, pool: [], next: [], coinOnly: true };
+    coinFlip(a, b);
+  }
+
+  function renderSetup() {
+    cancelAnimationFrame(raf); game = null;
+    if (room && !room.isHost) return renderGuestLobby();
+    if (cur().coinOnly) { moveWaiter(0); renderHead(); return renderCoinSetup(); }
+    moveWaiter(0);
+    renderHead();
+    const c = cur(), list = c.list;
+    const n = filled().length;
+    screen.innerHTML = `
+      ${cat === "custom" ? `<div class="field topic"><label for="topic">What are you deciding?</label><input id="topic" value="${esc(c.topic)}" placeholder="e.g. Which apartment" maxlength="40"></div>` : ""}
+      ${fillPanel()}
+      <div class="label">${c.ask}</div>
+      <div class="lines">
+        ${list.map((d, i) => `
+          <div class="line">
+            <span>${d.trim() && ICON_RULES[cat] ? iconFor(d, c.notes[d]) : String(i + 1).padStart(2, "0")}</span>
+            <input id="opt-${i}" value="${esc(d)}" placeholder="${c.placeholder}" maxlength="60" aria-label="${c.noun} ${i + 1}">
+            <button data-rm="${i}" aria-label="Remove ${c.noun} ${i + 1}">×</button>
+            ${c.notes[d] ? `<div class="note">${esc(c.notes[d])}</div>` : ""}
+          </div>`).join("")}
+      </div>
+      ${list.length < 12 ? `<button class="ghost" id="add">+ add a line</button>` : ""}
+      <div class="label">Who’s coming?</div>
+      <div class="who" role="group" aria-label="Who’s coming">
+        ${Object.entries(CHARS).map(([k, ch]) => `
+          <button class="whob" data-who="${k}" aria-pressed="${k === who}">
+            <svg viewBox="0 0 56 84" width="28" height="42" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">${figure(k)}</svg>
+            <span>${k === "usual" ? c.usualName : ch.name}</span>
+          </button>`).join("")}
+      </div>
+      <div class="label">${c.paceQ}</div>
+      <div class="row">
+        ${c.pace.map((p, i) => `<button class="pill" data-pace="${i}" aria-pressed="${i === pace}">${p} · ${PACE_SEC[i]}s</button>`).join("")}
+      </div>
+      <button class="go" id="start" ${n < 2 ? "disabled" : ""}>${c.go}</button>
+      <p class="hint" id="hint">${hintText(n)}</p>`;
+
+    wireFill();
+    const topic = $("topic");
+    if (topic) topic.addEventListener("input", () => { c.topic = topic.value; renderHead(); });
+    screen.querySelectorAll(".line input").forEach((inp, i) => {
+      inp.addEventListener("input", () => {
+        list[i] = inp.value;
+        const m = filled().length;
+        $("start").disabled = m < 2;
+        $("hint").textContent = hintText(m);
+      });
+      inp.addEventListener("keydown", e => {
+        if (e.key === "Enter" && list.length < 12 && i === list.length - 1) { list.push(""); renderSetup(); $("opt-" + (i + 1)).focus(); }
+      });
+    });
+    screen.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { list.splice(+b.dataset.rm, 1); if (!list.length) list.push(""); renderSetup(); });
+    screen.querySelectorAll("[data-pace]").forEach(b => b.onclick = () => { pace = +b.dataset.pace; renderSetup(); });
+    screen.querySelectorAll("[data-who]").forEach(b => b.onclick = () => {
+      who = b.dataset.who;
+      try { localStorage.setItem("twic-who", who); } catch (e) {}
+      drawFigure();
+      renderSetup();
+      moveWaiter(0, voice().opener); // say hi
+    });
+    const add = $("add"); if (add) add.onclick = () => { list.push(""); renderSetup(); $("opt-" + (list.length - 1)).focus(); };
+    $("start").onclick = start;
+    if (room) roomifySetup();
+  }
+
+  /* ---------- game ---------- */
+  function start() {
+    const list = [...new Set(filled())];
+    if (list.length < 2) return;
+    if (aiCtl) aiCtl.abort();
+    renderHead();
+    game = { pool: shuffle(list), next: [], strikes: 0, times: [], stalls: 0, lastLoser: null, round: 1, total: list.length - 1, played: 0 };
+    moveWaiter(0, voice().opener);
+    nextDuel();
+  }
+
+  function nextDuel() {
+    const g = game;
+    if (g.pool.length < 2) {
+      g.pool = shuffle(g.next.concat(g.pool)); g.next = []; g.round++;
+      if (g.pool.length === 1) return verdict(g.pool[0], g.lastLoser, false);
+    }
+    g.a = g.pool.shift(); g.b = g.pool.shift();
+    renderDuel();
+  }
+
+  const card = (name, key, id) => {
+    const note = cur().notes[name];
+    return `<button class="dish" id="${id}">${iconFor(name, note)}<span class="dname">${esc(name)}</span>${note ? `<span class="note">${esc(note)}</span>` : ""}<kbd>${key}</kbd></button>`;
+  };
+
+  function renderDuel() {
+    const g = game, sec = PACE_SEC[pace];
+    screen.innerHTML = `
+      <div class="round"><span>Round ${g.round} · duel ${g.played + 1} of ${g.total}</span>
+        <span class="strikes">Stalls ${[...Array(STEPS)].map((_, i) => `<b class="${i < g.strikes ? "on" : ""}">${i < g.strikes ? "✕" : ""}</b>`).join("")}</span></div>
+      <div class="timer" id="timer"><i id="bar"></i></div>
+      <div class="duel">
+        ${card(g.a, "←", "pa")}
+        <span class="vs">or</span>
+        ${card(g.b, "→", "pb")}
+      </div>
+      ${g.total === 1 ? `<button class="ghost" id="tie" style="justify-self:center">Tie? Flip a coin</button>` : ""}`;
+    $("pa").onclick = () => choose(g.a, g.b);
+    $("pb").onclick = () => choose(g.b, g.a);
+    const tie = $("tie"); if (tie) tie.onclick = () => coinFlip(g.a, g.b);
+    const t0 = performance.now(); g.t0 = t0;
+    const bar = $("bar"), timer = $("timer");
+    const tick = now => {
+      const left = 1 - (now - t0) / (sec * 1000);
+      bar.style.transform = `scaleX(${Math.max(0, left)})`;
+      timer.classList.toggle("low", left < .35);
+      if (left <= 0) return stall();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function choose(win, lose) {
+    const g = game; cancelAnimationFrame(raf);
+    g.times.push(performance.now() - g.t0);
+    g.played++; g.lastLoser = lose; g.next.push(win);
+    buzz("pick");
+    nextDuel();
+  }
+
+  function stall() {
+    const g = game; cancelAnimationFrame(raf);
+    g.strikes++; g.stalls++;
+    buzz("stall");
+    // Only two options and you stalled out: settle it with a coin instead.
+    if (g.strikes >= STEPS && g.total === 1) return coinFlip(g.a, g.b);
+    if (g.strikes >= STEPS) {
+      moveWaiter(STEPS, "Okay!");
+      const left = [g.a, g.b, ...g.pool, ...g.next];
+      const chosen = pick(left);
+      const other = pick(left.filter(x => x !== chosen)) || g.lastLoser;
+      screen.querySelectorAll(".dish").forEach(b => b.disabled = true);
+      return setTimeout(() => { if (game === g) verdict(chosen, other, true); }, 650);
+    }
+    moveWaiter(g.strikes, pick(voice().stall));
+    [g.a, g.b] = [g.b, g.a]; // same matchup, sides swapped, clock reset
+    renderDuel();
+  }
+
+  /* ---------- verdict ---------- */
+  /* Coin flip for a two-option tie. Heads is the left option, tails the right; the coin
+     spins and lands on a random side, then the usual verdict and gut check follow. */
+  function coinFlip(a, b) {
+    const g = game; cancelAnimationFrame(raf);
+    const heads = Math.random() < 0.5;
+    moveWaiter(Math.min(g.strikes, STEPS), "Coin flip!");
+    spinCoin(a, b, heads, () => {
+      if (game !== g) return;
+      setTimeout(() => { if (game === g) verdict(heads ? a : b, heads ? b : a, "coin"); }, 900);
+    });
+  }
+
+  // Draw the coin and spin it so it lands on `heads` (a) or tails (b), then call done().
+  function spinCoin(a, b, heads, done, label = "Heads or tails") {
+    screen.innerHTML = `
+      <div class="label" style="text-align:center">${label}</div>
+      <div class="coinwrap">
+        <div class="coin" id="coin">
+          <div class="face front"><small>Heads</small>${esc(a)}</div>
+          <div class="face back"><small>Tails</small>${esc(b)}</div>
+        </div>
+      </div>
+      <p class="hint" style="text-align:center" id="coinmsg">Flipping…</p>`;
+    const coin = $("coin");
+    const turns = 360 * 6 + (heads ? 0 : 180);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const anim = coin.animate([
+      { transform: "translateY(0) rotateY(0deg)" },
+      { transform: `translateY(-70px) rotateY(${turns / 2}deg)`, offset: 0.45 },
+      { transform: `translateY(0) rotateY(${turns}deg)` }
+    ], { duration: still ? 1 : 1700, easing: "cubic-bezier(.25,.7,.35,1)", fill: "forwards" });
+    anim.onfinish = () => {
+      const msg = $("coinmsg");
+      if (!msg) return;
+      buzz("pick");
+      msg.textContent = heads ? "Heads!" : "Tails!";
+      done();
+    };
+  }
+
+  function verdict(winner, runnerUp, forced) {
+    const g = game, c = cur(); cancelAnimationFrame(raf);
+    g.winner = winner; g.done = true;
+    buzz(forced ? "forced" : "done");
+    const v = voice();
+    const byCoin = forced === "coin";
+    moveWaiter(STEPS, byCoin ? "The coin has spoken." : forced ? pick(v.arrive) + "…" : v.ready);
+    const avg = g.times.length ? (g.times.reduce((a, b) => a + b, 0) / g.times.length / 1000).toFixed(2) + "s" : "—";
+    const fastest = g.times.length ? (Math.min(...g.times) / 1000).toFixed(2) + "s" : "—";
+    screen.innerHTML = `
+      <div class="label">${byCoin ? "The coin decided" : forced ? v.forced : c.win}</div>
+      ${iconFor(winner, c.notes[winner]).replace('class="ico"', 'class="ico big"')}
+      <p class="order scribble">${esc(winner)}</p>
+      ${c.notes[winner] ? `<p class="hint">${esc(c.notes[winner])}</p>` : ""}
+      <div class="stats">
+        <div><b>${avg}</b><small>Avg. pick</small></div>
+        <div><b>${fastest}</b><small>Fastest</small></div>
+        <div><b>${g.stalls}</b><small>Stalls</small></div>
+      </div>
+      <div class="label">Gut check. ${c.gut}</div>
+      <div class="gut">
+        <button id="relief">Relief</button>
+        <button id="pang">A tiny pang</button>
+      </div>
+      <p class="hint">Be honest. A pang means part of you wanted ${runnerUp ? `<em>${esc(runnerUp)}</em>` : "something else"}.</p>`;
+    $("relief").onclick = () => close(winner, false);
+    $("pang").onclick = () => close(runnerUp || winner, !!runnerUp);
+  }
+
+  function close(final, swapped) {
+    const c = cur();
+    moveWaiter(STEPS, swapped ? voice().swapOk : voice().keepOk);
+    screen.innerHTML = `
+      <div class="label">Final answer</div>
+      ${iconFor(final, c.notes[final]).replace('class="ico"', 'class="ico big"')}
+      <p class="order scribble">${esc(final)}</p>
+      ${c.notes[final] ? `<p class="hint">${esc(c.notes[final])}</p>` : ""}
+      ${c.urls && c.urls[final] ? `<a class="act" href="${esc(c.urls[final])}" target="_blank" rel="noopener" style="justify-self:start;text-decoration:none">Open in Google Maps</a>` : ""}
+      <p class="final">${swapped ? c.swapMsg(esc(game.winner), esc(final)) : c.keepMsg}</p>
+      <span class="stamp">${c.stamp}</span>
+      <div class="row">
+        <button class="pill" id="again">${c.coinOnly ? "Flip again" : "Same list, new bracket"}</button>
+        <button class="pill" id="edit">${c.coinOnly ? "Change the sides" : "Change the list"}</button>
+      </div>`;
+    $("again").onclick = c.coinOnly ? flipFromSection : start;
+    $("edit").onclick = renderSetup;
+  }
+
+  /* ---------- Live rooms ----------
+     Play with friends: one person creates a room and shares the 4-letter code; everyone joins
+     with just a name. The room server (room-worker/) holds the options, shuffles the bracket and
+     counts votes, so every phone shows exactly the same thing. Majority wins each vote; a tie
+     (or nobody voting) is settled by one coin flip that every phone sees land the same way. */
+  let room = null;          // { code, ws, state, isHost, myVotes, shown, retries, leaving }
+  let roomPanel = false;    // the "Play with friends" form is open
+  let roomMsg = "";
+  const me = { id: "", name: "" };
+  try {
+    me.id = localStorage.getItem("twic-pid") || "";
+    me.name = localStorage.getItem("twic-name") || "";
+  } catch (e) {}
+  if (!me.id) {
+    me.id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).slice(0, 36);
+    try { localStorage.setItem("twic-pid", me.id); } catch (e) {}
+  }
+  const ROOM_ERR = {
+    no_room: "No room with that code. Check the letters and try again.",
+    room_full: "That room is full (12 players).",
+    need_two: "Add at least two options first.",
+    offline: "Couldn’t reach the room server. Check your connection.",
+    no_name: "Type your name first."
+  };
+
+  function renderRoomBar() {
+    const bar = $("roombar");
+    if (!room) {
+      bar.innerHTML = roomPanel ? `
+        <div class="roomform">
+          <div class="field"><label for="rname">Your name</label><input id="rname" value="${esc(me.name)}" maxlength="20" placeholder="e.g. Cathy" autocomplete="nickname"></div>
+          <div class="row">
+            <button class="act" id="rcreate">Create a room</button>
+            <span class="status">or</span>
+            <input id="rcode" class="codein" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off" aria-label="Room code">
+            <button class="act alt" id="rjoin">Join</button>
+          </div>
+          ${roomMsg ? `<p class="status err">${esc(roomMsg)}</p>` : ""}
+          <button class="ghost" id="rcancel">Cancel</button>
+        </div>` : `<button class="friends" id="ropen">Play with friends</button>`;
+      const o = $("ropen"); if (o) o.onclick = () => { roomPanel = true; roomMsg = ""; renderRoomBar(); $("rname").focus(); };
+      const n = $("rname");
+      if (n) n.oninput = () => { me.name = n.value.trim(); try { localStorage.setItem("twic-name", me.name); } catch (e) {} };
+      const cr = $("rcreate"); if (cr) cr.onclick = createRoom;
+      const j = $("rjoin"); if (j) j.onclick = () => joinRoom($("rcode").value);
+      const ci = $("rcode"); if (ci) ci.onkeydown = e => { if (e.key === "Enter") joinRoom(ci.value); };
+      const x = $("rcancel"); if (x) x.onclick = () => { roomPanel = false; renderRoomBar(); };
+      return;
+    }
+    const st = room.state, players = st ? st.players : [];
+    bar.innerHTML = `
+      <div class="roominfo">
+        <div class="roomtop">
+          <span class="label">Room</span>
+          <button class="code" id="rcopy" title="Copy code">${esc(room.code)}</button>
+          <span class="status">${room.connected ? `${players.filter(p => p.online).length} here` : "Reconnecting…"}</span>
+          <button class="ghost" id="rleave">Leave</button>
+        </div>
+        <div class="players">
+          ${players.map(p => `<span class="pchip ${p.online ? "" : "away"} ${st.phase === "duel" && p.voted ? "voted" : ""}">${esc(p.name)}${p.id === st.hostId ? " ★" : ""}${p.id === me.id ? " (you)" : ""}</span>`).join("")}
+        </div>
+      </div>`;
+    $("rleave").onclick = leaveRoom;
+    $("rcopy").onclick = () => {
+      const done = () => { $("rcopy").textContent = "Copied"; setTimeout(() => { if ($("rcopy")) $("rcopy").textContent = room.code; }, 1200); };
+      try { navigator.clipboard.writeText(room.code).then(done, () => {}); } catch (e) {}
+    };
+  }
+
+  async function createRoom() {
+    if (!me.name) { roomMsg = ROOM_ERR.no_name; return renderRoomBar(); }
+    try {
+      const res = await fetch(API_BASE + "/api/room/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId: me.id }) });
+      const data = await res.json();
+      if (!res.ok) throw 0;
+      connect(data.code);
+    } catch (e) { roomMsg = ROOM_ERR.offline; renderRoomBar(); }
+  }
+
+  async function joinRoom(code) {
+    code = String(code || "").trim().toUpperCase();
+    if (!me.name) { roomMsg = ROOM_ERR.no_name; return renderRoomBar(); }
+    if (!/^[A-Z2-9]{4}$/.test(code)) { roomMsg = ROOM_ERR.no_room; return renderRoomBar(); }
+    try {
+      const res = await fetch(API_BASE + "/api/room/" + code);
+      const data = await res.json().catch(() => ({}));
+      if (!data.exists) { roomMsg = ROOM_ERR.no_room; return renderRoomBar(); }
+      connect(code);
+    } catch (e) { roomMsg = ROOM_ERR.offline; renderRoomBar(); }
+  }
+
+  function connect(code) {
+    if (!room || room.code !== code) room = { code, state: null, isHost: false, myVotes: {}, shown: "", retries: 0 };
+    roomPanel = false; roomMsg = "";
+    const base = (API_BASE || location.origin).replace(/^http/, "ws");
+    const ws = new WebSocket(`${base}/api/room/${code}/ws`);
+    room.ws = ws;
+    ws.onopen = () => {
+      room.connected = true; room.retries = 0;
+      ws.send(JSON.stringify({ type: "hello", id: me.id, name: me.name, who }));
+      renderRoomBar();
+    };
+    ws.onmessage = e => {
+      let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+      if (m.type === "state") onRoomState(m.state);
+      if (m.type === "error") {
+        if (m.code === "room_full") { leaveRoom(); roomPanel = true; roomMsg = ROOM_ERR.room_full; renderRoomBar(); }
+        else { aiErr = true; aiMsg = ROOM_ERR[m.code] || "Something went wrong."; if (!game) renderSetup(); }
+      }
+    };
+    ws.onclose = () => {
+      if (!room || room.ws !== ws) return;
+      room.connected = false; renderRoomBar();
+      if (room.leaving) return;
+      if (room.retries++ < 8) setTimeout(() => { if (room && room.ws === ws) connect(code); }, 1500);
+    };
+    renderRoomBar();
+  }
+
+  function leaveRoom() {
+    if (!room) return;
+    room.leaving = true;
+    try { room.ws.close(); } catch (e) {}
+    room = null;
+    cancelAnimationFrame(raf);
+    renderRoomBar();
+    applyCat();
+  }
+
+  const roomSend = m => { if (room && room.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
+
+  // Host: send the current list to the room and start the shared game.
+  function startRoom(names) {
+    const c = cur();
+    const list = names || [...new Set(filled())];
+    if (list.length < 2) { aiErr = true; aiMsg = ROOM_ERR.need_two; return renderSetup(); }
+    roomSend({
+      type: "start", category: cat, title: cat === "custom" ? c.topic : c.tab,
+      items: list.map(n => ({ name: n, note: c.notes[n] || "" }))
+    });
+  }
+
+  // In a room the host's setup screen starts the game for everyone.
+  function roomifySetup() {
+    const go = $("start");
+    if (go) { go.textContent = "Start for everyone"; go.onclick = () => startRoom(); }
+    const hint = $("hint");
+    if (hint) hint.textContent = "Everyone in the room votes on each pair. Majority wins; a tie is a coin flip.";
+  }
+
+  function renderGuestLobby() {
+    const st = room && room.state;
+    const host = st && st.players.find(p => p.id === st.hostId);
+    moveWaiter(0);
+    screen.innerHTML = `
+      <div class="label">Waiting for ${esc(host ? host.name : "the host")}</div>
+      <p class="final">${esc(host ? host.name : "The host")} is choosing the options. When they start, you’ll vote on each pair together.</p>
+      ${st && st.phase === "final" && st.winner ? `<p class="hint">Last game’s pick: <strong>${esc(st.winner)}</strong></p>` : ""}
+      <p class="hint">Tip: pick who walks over for you while you wait.</p>
+      <div class="who" role="group" aria-label="Who’s coming">
+        ${Object.entries(CHARS).map(([k, ch]) => `
+          <button class="whob" data-who="${k}" aria-pressed="${k === who}">
+            <svg viewBox="0 0 56 84" width="28" height="42" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">${figure(k)}</svg>
+            <span>${k === "usual" ? cur().usualName : ch.name}</span>
+          </button>`).join("")}
+      </div>`;
+    screen.querySelectorAll("[data-who]").forEach(b => b.onclick = () => {
+      who = b.dataset.who;
+      try { localStorage.setItem("twic-who", who); } catch (e) {}
+      drawFigure(); renderGuestLobby();
+      roomSend({ type: "hello", id: me.id, name: me.name, who });
+    });
+  }
+
+  function onRoomState(st) {
+    const prev = room.state;
+    room.state = st;
+    room.isHost = st.hostId === me.id;
+    room.endsAt = Date.now() + st.endsIn;
+    // Follow the room's category (guests see what the host started).
+    if (st.phase !== "lobby" && CATS[st.category] && st.category !== cat) { cat = st.category; setChrome(); }
+    renderRoomBar();
+    if (st.phase === "lobby") {
+      game = null;
+      // Don't wipe what the host is typing on every join/leave; only redraw when the phase changes.
+      if (!room.isHost || !prev || prev.phase !== "lobby" || !$("start") && !$("flip")) renderSetup();
+      return;
+    }
+    if (st.phase === "duel") return renderRoomDuel(st, prev);
+    if (st.phase === "reveal") return renderRoomReveal(st);
+    if (st.phase === "final") return renderRoomFinal(st);
+  }
+
+  function roomCard(name, side, mine) {
+    const note = (room.state.items.find(x => x.name === name) || {}).note;
+    return `<button class="dish ${mine === side ? "picked" : ""}" data-side="${side}">${iconFor(name, note)}<span class="dname">${esc(name)}</span>${note ? `<span class="note">${esc(note)}</span>` : ""}${mine === side ? `<kbd>your vote</kbd>` : ""}</button>`;
+  }
+
+  function renderRoomDuel(st, prev) {
+    const key = `${st.played}:${st.duel.a}|${st.duel.b}`;
+    const mine = room.myVotes[key];
+    const online = st.players.filter(p => p.online), voted = online.filter(p => p.voted).length;
+    if (!prev || prev.phase !== "duel" || prev.played !== st.played) moveWaiter(0, "Everyone, vote!");
+    screen.innerHTML = `
+      <div class="round"><span>Round ${st.round} · vote ${st.played + 1} of ${st.totalDuels}</span><span>${voted}/${online.length} voted</span></div>
+      <div class="timer" id="timer"><i id="bar"></i></div>
+      <div class="duel">
+        ${roomCard(st.duel.a, "a", mine)}
+        <span class="vs">or</span>
+        ${roomCard(st.duel.b, "b", mine)}
+      </div>
+      <p class="hint" style="text-align:center">${mine ? "You can change your vote until time runs out." : "Majority wins. A tie is a coin flip."}</p>`;
+    screen.querySelectorAll("[data-side]").forEach(b => b.onclick = () => {
+      room.myVotes[key] = b.dataset.side;
+      buzz("pick");
+      roomSend({ type: "vote", side: b.dataset.side });
+      renderRoomDuel(room.state, room.state);
+    });
+    // Countdown bar; the character walks closer as time runs out.
+    cancelAnimationFrame(raf);
+    const total = st.voteSeconds * 1000, bar = $("bar"), timer = $("timer");
+    let stage = Math.min(2, Math.floor((1 - (room.endsAt - Date.now()) / total) * 3));
+    const tick = () => {
+      if (!$("bar") || room.state.phase !== "duel") return;
+      const left = Math.max(0, (room.endsAt - Date.now()) / total);
+      bar.style.transform = `scaleX(${left})`;
+      timer.classList.toggle("low", left < .35);
+      const s2 = Math.min(2, Math.floor((1 - left) * 3));
+      if (s2 > stage) { stage = s2; moveWaiter(s2, pick(voice().stall)); }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function renderRoomReveal(st) {
+    cancelAnimationFrame(raf);
+    const r = st.result, key = `${st.played}`;
+    if (room.shown === key) return; // already showing this result
+    room.shown = key;
+    const names = side => st.players.filter(p => st.votes && st.votes[p.id] === side).map(p => p.name);
+    if (r.coin) {
+      moveWaiter(STEPS, r.va + r.vb ? `${r.va}–${r.vb}. Coin flip!` : "Nobody voted. Coin flip!");
+      return spinCoin(st.duel.a, st.duel.b, r.heads, () => {}, r.va + r.vb ? `Tied ${r.va}–${r.vb}` : "No votes");
+    }
+    const winA = r.winner === st.duel.a;
+    moveWaiter(Math.min(STEPS, 1), `${r.winner} wins!`);
+    screen.innerHTML = `
+      <div class="label" style="text-align:center">${Math.max(r.va, r.vb)}–${Math.min(r.va, r.vb)}</div>
+      <div class="duel">
+        <div class="dish ${winA ? "picked" : "lost"}">${esc(st.duel.a)}<span class="note">${r.va} vote${r.va === 1 ? "" : "s"}${names("a").length ? ": " + esc(names("a").join(", ")) : ""}</span></div>
+        <span class="vs">or</span>
+        <div class="dish ${winA ? "lost" : "picked"}">${esc(st.duel.b)}<span class="note">${r.vb} vote${r.vb === 1 ? "" : "s"}${names("b").length ? ": " + esc(names("b").join(", ")) : ""}</span></div>
+      </div>
+      <p class="hint" style="text-align:center">${esc(r.winner)} goes through.</p>`;
+  }
+
+  function renderRoomFinal(st) {
+    cancelAnimationFrame(raf);
+    room.shown = "";
+    buzz("done");
+    moveWaiter(STEPS, voice().ready);
+    const c = cur();
+    screen.innerHTML = `
+      <div class="label">The group picked</div>
+      ${iconFor(st.winner, (st.items.find(x => x.name === st.winner) || {}).note).replace('class="ico"', 'class="ico big"')}
+      <p class="order scribble">${esc(st.winner)}</p>
+      ${(st.items.find(x => x.name === st.winner) || {}).note ? `<p class="hint">${esc(st.items.find(x => x.name === st.winner).note)}</p>` : ""}
+      ${st.runnerUp ? `<p class="hint">Runner-up: ${esc(st.runnerUp)}</p>` : ""}
+      <span class="stamp">${c.stamp}</span>
+      ${room.isHost
+        ? `<div class="row"><button class="pill" id="rnew">New round</button></div>`
+        : `<p class="hint">Waiting for the host to start another round.</p>`}`;
+    const n = $("rnew"); if (n) n.onclick = () => roomSend({ type: "lobby" });
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!$("pa") || e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowLeft" || e.key === "1") { e.preventDefault(); $("pa").click(); }
+    if (e.key === "ArrowRight" || e.key === "2") { e.preventDefault(); $("pb").click(); }
+  });
+  window.addEventListener("resize", () => {
+    const step = !game ? 0 : game.done ? STEPS : game.strikes;
+    const track = waiter.parentElement.clientWidth - 56;
+    waiter.style.left = Math.round((step / STEPS) * track) + "px";
+  });
+
+  applyCat();
+  renderRoomBar();
+})();
+// Installable web app: work offline after the first visit (needs https or localhost; skipped inside the native app).
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").then(reg => reg.update()).catch(() => {});
+  // When a new version has been deployed, reload once so players never mix old and new code.
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded) { reloaded = true; location.reload(); } });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "what2do",
+  "version": "1.0.0",
+  "description": "What2Do: a free, pastel game for indecisive people",
+  "scripts": {
+    "dev": "wrangler pages dev --port 8788",
+    "deploy": "wrangler pages deploy",
+    "deploy:rooms": "cd room-worker && wrangler deploy",
+    "dev:rooms": "cd room-worker && wrangler dev --port 8787"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4.147.0"
+  }
+}
